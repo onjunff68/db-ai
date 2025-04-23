@@ -12,8 +12,12 @@ except Exception as e:
     st.warning("กำลังสร้างโมเดลใหม่...")
     
     # ถ้าโหลดไม่สำเร็จ สร้างโมเดลใหม่
-    from sklearn.ensemble import RandomForestClassifier
-    import pandas as pd
+    try:
+        from sklearn.ensemble import RandomForestClassifier
+    except ImportError:
+        # ถ้าไม่สามารถนำเข้าจาก sklearn.ensemble ให้ลองใช้โมเดลอื่น
+        from sklearn.tree import DecisionTreeClassifier as RandomForestClassifier
+        st.warning("ใช้โมเดลทางเลือกที่เรียบง่ายกว่า")
     
     # โหลดข้อมูล
     try:
