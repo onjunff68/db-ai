@@ -1,6 +1,7 @@
 import streamlit as st
 import pickle
 import pandas as pd
+import numpy as np
 
 # โหลดโมเดล
 with open("diabetes_model.pkl", "rb") as f:
@@ -27,7 +28,7 @@ with col2:
 # ปุ่มทำนาย
 if st.button("ประเมินความเสี่ยง", type="primary"):
     # เตรียมข้อมูลสำหรับทำนาย
-    features = [[pregnancies, glucose, blood_pressure, skin_thickness, insulin, bmi, dpf, age]]
+    features = np.array([[pregnancies, glucose, blood_pressure, skin_thickness, insulin, bmi, dpf, age]])
     
     # ทำนาย
     prediction = model.predict(features)[0]
