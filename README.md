@@ -67,10 +67,11 @@
 
 1. โคลนรีโพสิทอรี:
 git clone https://github.com/onjunff68/db-ai.git
+
 cd db-ai
-2. ติดตั้งแพ็คเกจที่จำเป็น:
+3. ติดตั้งแพ็คเกจที่จำเป็น:
 pip install -r requirements.txt
-3. รันแอปพลิเคชัน:
+4. รันแอปพลิเคชัน:
 streamlit run streamlit_app.py
 
 ## ลิขสิทธิ์
