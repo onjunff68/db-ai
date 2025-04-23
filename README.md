@@ -66,12 +66,17 @@
 ## การติดตั้งและรันแอปพลิเคชัน (สำหรับนักพัฒนา)
 
 1. โคลนรีโพสิทอรี:
+
 git clone https://github.com/onjunff68/db-ai.git
 
 cd db-ai
-3. ติดตั้งแพ็คเกจที่จำเป็น:
+
+2. ติดตั้งแพ็คเกจที่จำเป็น:
+
 pip install -r requirements.txt
-4. รันแอปพลิเคชัน:
+
+3. รันแอปพลิเคชัน:
+
 streamlit run streamlit_app.py
 
 ## ลิขสิทธิ์
