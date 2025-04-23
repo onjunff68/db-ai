@@ -4,30 +4,29 @@ import pandas as pd
 import numpy as np
 
 # โหลดโมเดล
-import pickle
-import streamlit as st
-
 try:
-    # วิธีโหลดปกติ
+    # พยายามโหลดโมเดลเดิม
     with open("diabetes_model.pkl", "rb") as f:
         model = pickle.load(f)
 except Exception as e:
-    st.error(f"เกิดข้อผิดพลาดในการโหลดโมเดล: {e}")
-    st.info("กำลังใช้โมเดลทางเลือก...")
+    st.warning("กำลังสร้างโมเดลใหม่...")
     
-    # สร้างโมเดลใหม่แทน
+    # ถ้าโหลดไม่สำเร็จ สร้างโมเดลใหม่
     from sklearn.ensemble import RandomForestClassifier
     import pandas as pd
     
     # โหลดข้อมูล
-    df = pd.read_csv("Diabetes-dataset.csv")
-    X = df.drop(columns=["Outcome"])
-    y = df["Outcome"]
-    
-    # สร้างโมเดลใหม่
-    model = RandomForestClassifier(n_estimators=100, random_state=42)
-    model.fit(X, y)
-    st.success("สร้างโมเดลใหม่เรียบร้อยแล้ว")
+    try:
+        df = pd.read_csv("Diabetes-dataset.csv")
+        X = df.drop(columns=["Outcome"])
+        y = df["Outcome"]
+        
+        # สร้างโมเดลใหม่
+        model = RandomForestClassifier(n_estimators=100, random_state=42)
+        model.fit(X, y)
+        st.success("สร้างโมเดลใหม่เรียบร้อยแล้ว")
+    except Exception as e:
+        st.error(f"ไม่สามารถสร้างโมเดลใหม่ได้: {e}")
 
 # สร้างหน้าเว็บ
 st.title("ระบบประเมินความเสี่ยงเบาหวาน")
