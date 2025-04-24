@@ -32,7 +32,7 @@
 ## การติดตั้งและรันแอปพลิเคชัน (สำหรับนักพัฒนา)
 
 1. โคลนรีโพสิทอรี:
-2. # ระบบประเมินความเสี่ยงเบาหวาน (Diabetes Risk Assessment System)
+2. ระบบประเมินความเสี่ยงเบาหวาน (Diabetes Risk Assessment System)
 
 เว็บแอปพลิเคชันสำหรับทำนายความเสี่ยงในการเป็นโรคเบาหวานโดยใช้ Machine Learning (Random Forest)
 
@@ -67,17 +67,17 @@
 
 1. โคลนรีโพสิทอรี:
 
-git clone https://github.com/onjunff68/db-ai.git
+    git clone https://github.com/onjunff68/db-ai.git
 
-cd db-ai
+    cd db-ai
 
 2. ติดตั้งแพ็คเกจที่จำเป็น:
 
-pip install -r requirements.txt
+    pip install -r requirements.txt
 
 3. รันแอปพลิเคชัน:
 
-streamlit run streamlit_app.py
+    streamlit run streamlit_app.py
 
 ## ลิขสิทธิ์
 © 2025 B22 onjunff68 Sank Og A.Nara A.SK 
