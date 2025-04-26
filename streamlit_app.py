@@ -7,6 +7,24 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split, StratifiedKFold, cross_val_score
 from sklearn.preprocessing import StandardScaler
 
+try:
+    # Try to load the dataset
+    df = pd.read_csv("Diabetes-dataset.csv")
+except FileNotFoundError:
+    st.error("Diabetes-dataset.csv file not found. Please make sure the file is in the repository.")
+    # Create a small sample dataset to allow the app to load
+    df = pd.DataFrame({
+        "Pregnancies": [6, 1],
+        "Glucose": [148, 85],
+        "BloodPressure": [72, 66],
+        "SkinThickness": [35, 29],
+        "Insulin": [0, 0],
+        "BMI": [33.6, 26.6],
+        "DiabetesPedigreeFunction": [0.627, 0.351],
+        "Age": [50, 31],
+        "Outcome": [1, 0]
+    })
+
 # โหลดโมเดล
 try:
     # พยายามโหลดโมเดลเดิม
