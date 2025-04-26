@@ -219,7 +219,7 @@ with tab2:
         fig, ax = plt.subplots(figsize=(10, 4))
         sns.barplot(x='Fold', y='Accuracy', data=fold_scores, ax=ax)
         ax.set_ylim(0, 1)
-        ax.set_title('ความแม่นยำในแต่ละ Fold')
+        ax.set_title('Accuracy in each fold')
         st.pyplot(fig)
         
         # เทรนโมเดลกับชุด train และทดสอบกับชุด validation
