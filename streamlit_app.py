@@ -1,33 +1,85 @@
+# ส่วนการสร้างและโหลดโมเดล
 import streamlit as st
 import pickle
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split, StratifiedKFold, cross_val_score
+from sklearn.preprocessing import StandardScaler
 
 # โหลดโมเดล
 try:
     # พยายามโหลดโมเดลเดิม
     with open("diabetes_model.pkl", "rb") as f:
         model = pickle.load(f)
+    st.success("โหลดโมเดลเรียบร้อยแล้ว")
 except Exception as e:
     st.warning("กำลังสร้างโมเดลใหม่...")
     
     # ถ้าโหลดไม่สำเร็จ สร้างโมเดลใหม่
-    from sklearn.ensemble import RandomForestClassifier
-    import pandas as pd
-    
-    # โหลดข้อมูล
     try:
+        # โหลดข้อมูล
         df = pd.read_csv("Diabetes-dataset.csv")
+        
+        # เตรียมข้อมูล
         X = df.drop(columns=["Outcome"])
         y = df["Outcome"]
         
-        # สร้างโมเดลใหม่
-        model = RandomForestClassifier(n_estimators=100, random_state=42)
-        model.fit(X, y)
+        # จัดการกับค่าสูญหายและค่าที่ไม่สมเหตุสมผล (เช่น ค่า 0 ในคอลัมน์ที่ไม่ควรเป็น 0)
+        for col in ['Glucose', 'BloodPressure', 'SkinThickness', 'Insulin', 'BMI']:
+            X.loc[X[col] == 0, col] = np.nan
+            X[col].fillna(X[col].mean(), inplace=True)
+            
+        # สเกลข้อมูล
+        scaler = StandardScaler()
+        X_scaled = scaler.fit_transform(X)
+        
+        # แบ่งข้อมูลเพื่อฝึกสอนและทดสอบ (ใช้ stratify เพื่อรักษาสัดส่วนคลาส)
+        X_train, X_test, y_train, y_test = train_test_split(
+            X_scaled, y, test_size=0.2, random_state=42, stratify=y
+        )
+        
+        # สร้างโมเดลด้วยพารามิเตอร์ที่เหมาะสม
+        model = RandomForestClassifier(
+            n_estimators=100,
+            max_depth=5,  # จำกัดความลึกเพื่อลด overfitting
+            min_samples_split=5,  # ต้องมีตัวอย่างอย่างน้อย 5 ตัวก่อนแยก node
+            random_state=42
+        )
+        
+        # ตรวจสอบประสิทธิภาพก่อนเทรนโมเดลเต็มรูปแบบ
+        cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+        cv_scores = cross_val_score(model, X_train, y_train, cv=cv)
+        
+        # แสดงผล cross-validation
+        st.info(f"ความแม่นยำจาก cross-validation: {cv_scores.mean():.2f} (±{cv_scores.std():.2f})")
+        
+        # เทรนโมเดลกับข้อมูลทั้งหมด
+        model.fit(X_train, y_train)
+        
+        # บันทึกโมเดล
+        with open("diabetes_model.pkl", "wb") as f:
+            pickle.dump(model, f)
+            
+        # บันทึก scaler ด้วยเพื่อใช้กับข้อมูลใหม่
+        with open("scaler.pkl", "wb") as f:
+            pickle.dump(scaler, f)
+            
         st.success("สร้างโมเดลใหม่เรียบร้อยแล้ว")
+        
     except Exception as e:
         st.error(f"ไม่สามารถสร้างโมเดลใหม่ได้: {e}")
+        
+        # สร้างโมเดลอย่างง่าย
+        st.info("กำลังสร้างโมเดลอย่างง่าย...")
+        simple_model = RandomForestClassifier(n_estimators=10, random_state=42)
+        # ใช้ข้อมูลตัวอย่างเพื่อสร้างโมเดลอย่างง่าย
+        sample_X = [[6, 148, 72, 35, 0, 33.6, 0.627, 50],  # ตัวอย่างคนที่เป็นเบาหวาน
+                    [1, 85, 66, 29, 0, 26.6, 0.351, 31]]   # ตัวอย่างคนที่ไม่เป็นเบาหวาน
+        sample_y = [1, 0]  # ผลลัพธ์ตัวอย่าง
+        simple_model.fit(sample_X, sample_y)
+        model = simple_model
+        st.warning("ใช้โมเดลอย่างง่ายแทน เนื่องจากพบปัญหาในการสร้างโมเดลจากข้อมูลจริง")
 
 # สร้างหน้าเว็บ
 st.title("ระบบประเมินความเสี่ยงเบาหวาน")
