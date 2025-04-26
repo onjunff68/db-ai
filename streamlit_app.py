@@ -263,72 +263,48 @@ with tab2:
             st.metric("Recall", f"{val_recall:.2f}")
             st.metric("F1-score", f"{val_f1:.2f}")
         
-        # ส่วนแสดง Confusion Matrix สำหรับชุด validation
+        # แสดง Confusion Matrix สำหรับชุด validation
         st.subheader("Confusion Matrix (Validation Set)")
         cm_val = confusion_matrix(y_val, y_val_pred)
-
-        # สร้าง DataFrame สำหรับ confusion matrix
         cm_val_df = pd.DataFrame(cm_val, 
-                            index=['Actual: Not Diabetes', 'Actual: Diabetes'], 
-                            columns=['Predicted: Not Diabetes', 'Predicted: Diabetes'])
-
-        # สร้างรูปภาพด้วยขนาดที่เหมาะสม
-        fig, ax = plt.subplots(figsize=(10, 8))
-
-        # ใช้ seaborn แสดง heatmap โดยปรับการตั้งค่าให้เหมาะสม
-        sns.heatmap(cm_val_df, annot=True, fmt='d', cmap="Blues", 
-                linewidths=0.5, linecolor='gray',
-                xticklabels=['Predicted: Not Diabetes', 'Predicted: Diabetes'],
-                yticklabels=['Actual: Not Diabetes', 'Actual: Diabetes'],
-                cbar=True, ax=ax)
-
-        # กำหนดชื่อแกนและชื่อกราฟให้ชัดเจน
-        ax.set_ylabel('Actual', fontsize=14)
-        ax.set_xlabel('Predicted', fontsize=14)
-        ax.set_title('Confusion Matrix (Validation Set)', fontsize=16)
-
-        # ปรับตำแหน่งของ labels และตัวเลขให้อ่านง่าย
-        plt.setp(ax.get_xticklabels(), rotation=0, ha="center", rotation_mode="anchor")
-        plt.setp(ax.get_yticklabels(), rotation=0, va="center", rotation_mode="anchor")
-
-        # ปรับ layout ให้เหมาะสม
+                             index=['Actual: Not Diabetes', 'Actual: Diabetes'], 
+                             columns=['Predicted: Not Diabetes', 'Predicted: Diabetes'])
+        
+        fig, ax = plt.subplots(figsize=(8, 6))
+        sns.heatmap(cm_val_df, annot=True, fmt='d', cmap="Blues", ax=ax)
         plt.tight_layout()
-
-        # แสดงผลใน Streamlit
         st.pyplot(fig)
-
-        # แก้ไขส่วนของ Confusion Matrix สำหรับชุด test ในลักษณะเดียวกัน
+        
+        # ทำนายผลลัพธ์บนชุด test
+        y_test_pred = model.predict(X_test)
+        
+        # คำนวณค่าเมทริกต่างๆ บนชุด test
+        test_accuracy = accuracy_score(y_test, y_test_pred)
+        test_precision = precision_score(y_test, y_test_pred)
+        test_recall = recall_score(y_test, y_test_pred)
+        test_f1 = f1_score(y_test, y_test_pred)
+        
+        # แสดงผลการประเมินบนชุด test
+        st.subheader("ผลการประเมินประสิทธิภาพบนชุดข้อมูล Test (ข้อมูลที่โมเดลไม่เคยเห็นมาก่อน)")
+        
+        test_col1, test_col2 = st.columns(2)
+        with test_col1:
+            st.metric("Accuracy", f"{test_accuracy:.2f}")
+            st.metric("Precision", f"{test_precision:.2f}")
+        with test_col2:
+            st.metric("Recall", f"{test_recall:.2f}")
+            st.metric("F1-score", f"{test_f1:.2f}")
+        
+        # แสดง Confusion Matrix สำหรับชุด test
         st.subheader("Confusion Matrix (Test Set)")
         cm_test = confusion_matrix(y_test, y_test_pred)
-
-        # สร้าง DataFrame สำหรับ confusion matrix
         cm_test_df = pd.DataFrame(cm_test, 
-                            index=['Actual: Not Diabetes', 'Actual: Diabetes'], 
-                            columns=['Predicted: Not Diabetes', 'Predicted: Diabetes'])
-
-        # สร้างรูปภาพด้วยขนาดที่เหมาะสม
-        fig, ax = plt.subplots(figsize=(10, 8))
-
-        # ใช้ seaborn แสดง heatmap โดยปรับการตั้งค่าให้เหมาะสม
-        sns.heatmap(cm_test_df, annot=True, fmt='d', cmap="Blues", 
-                linewidths=0.5, linecolor='gray',
-                xticklabels=['Predicted: Not Diabetes', 'Predicted: Diabetes'],
-                yticklabels=['Actual: Not Diabetes', 'Actual: Diabetes'],
-                cbar=True, ax=ax)
-
-        # กำหนดชื่อแกนและชื่อกราฟให้ชัดเจน
-        ax.set_ylabel('Actual', fontsize=14)
-        ax.set_xlabel('Predicted', fontsize=14)
-        ax.set_title('Confusion Matrix (Test Set)', fontsize=16)
-
-        # ปรับตำแหน่งของ labels และตัวเลขให้อ่านง่าย
-        plt.setp(ax.get_xticklabels(), rotation=0, ha="center", rotation_mode="anchor")
-        plt.setp(ax.get_yticklabels(), rotation=0, va="center", rotation_mode="anchor")
-
-        # ปรับ layout ให้เหมาะสม
+                             index=['Actual: Not Diabetes', 'Actual: Diabetes'], 
+                             columns=['Predicted: Not Diabetes', 'Predicted: Diabetes'])
+        
+        fig, ax = plt.subplots(figsize=(8, 6))
+        sns.heatmap(cm_test_df, annot=True, fmt='d', cmap="Blues", ax=ax)
         plt.tight_layout()
-
-        # แสดงผลใน Streamlit
         st.pyplot(fig)
         
         # แสดงความสำคัญของแต่ละปัจจัย
