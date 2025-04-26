@@ -84,84 +84,158 @@ with tab2:
     st.subheader("ประสิทธิภาพของโมเดลทำนายความเสี่ยงเบาหวาน")
     
     # นำเข้าไลบรารีที่จำเป็น
-    from sklearn.model_selection import train_test_split
+    from sklearn.model_selection import train_test_split, cross_val_score, StratifiedKFold
     from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
+    from sklearn.ensemble import RandomForestClassifier
+    from sklearn.preprocessing import StandardScaler
     import matplotlib.pyplot as plt
     import seaborn as sns
+    import numpy as np
 
     # ใช้ฟอนต์ที่รองรับภาษาไทย
     import matplotlib as mpl
-    plt.rcParams['font.family'] = 'Tahoma'  # หรือใช้ฟอนต์อื่นที่รองรับภาษาไทย เช่น 'TH Sarabun New', 'Angsana New'
+    plt.rcParams['font.family'] = 'Tahoma'
     plt.rcParams['font.sans-serif'] = ['Tahoma']
     plt.rcParams['axes.unicode_minus'] = False
     
     try:
         # โหลดข้อมูลสำหรับประเมินประสิทธิภาพ
         df = pd.read_csv("Diabetes-dataset.csv")
+        
+        # ตรวจสอบและแสดงข้อมูลเบื้องต้น
+        st.write(f"ข้อมูลทั้งหมด: {df.shape[0]} แถว, {df.shape[1]} คอลัมน์")
+        
+        # แสดงตัวอย่างข้อมูล
+        st.write("ตัวอย่างข้อมูล:")
+        st.dataframe(df.head(5))
+        
+        # แสดงสัดส่วนของคลาส
+        class_counts = df["Outcome"].value_counts()
+        st.write("สัดส่วนของคลาส:")
+        fig, ax = plt.subplots(figsize=(8, 4))
+        sns.countplot(x='Outcome', data=df, ax=ax)
+        ax.set_xlabel('ผลลัพธ์ (0 = ไม่เป็นเบาหวาน, 1 = เป็นเบาหวาน)')
+        ax.set_ylabel('จำนวน')
+        st.pyplot(fig)
+        
+        # แยกตัวแปรต้นและตัวแปรตาม
         X = df.drop(columns=["Outcome"])
         y = df["Outcome"]
         
-        # แบ่งข้อมูลเป็นชุด train และ test
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+        # เตรียมข้อมูลเพิ่มเติม (จัดการกับค่าสูญหาย หากมี)
+        for col in X.columns:
+            # แทนที่ค่า 0 ในคอลัมน์ที่ไม่ควรเป็น 0 ด้วยค่าเฉลี่ย
+            if col in ['Glucose', 'BloodPressure', 'SkinThickness', 'Insulin', 'BMI']:
+                X.loc[X[col] == 0, col] = np.nan
+                X[col].fillna(X[col].mean(), inplace=True)
         
-        # ทำนายผลลัพธ์บนข้อมูล test
-        try:
-            # ถ้าโมเดลถูกสร้างแล้ว ให้ใช้โมเดลนั้น
-            y_pred = model.predict(X_test)
-        except:
-            # ถ้ายังไม่มีโมเดล หรือโมเดลมีปัญหา ให้สร้างใหม่
-            try:
-                from sklearn.ensemble import RandomForestClassifier
-                eval_model = RandomForestClassifier(n_estimators=100, random_state=42)
-            except ImportError:
-                from sklearn.tree import DecisionTreeClassifier as RandomForestClassifier
-                eval_model = RandomForestClassifier(random_state=42)
-            
-            eval_model.fit(X_train, y_train)
-            y_pred = eval_model.predict(X_test)
-            model = eval_model  # ใช้โมเดลใหม่แทนโมเดลเดิมที่มีปัญหา
+        # สเกลข้อมูล
+        scaler = StandardScaler()
+        X_scaled = scaler.fit_transform(X)
         
-        # คำนวณค่าเมทริกต่างๆ
-        accuracy = accuracy_score(y_test, y_pred)
-        precision = precision_score(y_test, y_pred)
-        recall = recall_score(y_test, y_pred)
-        f1 = f1_score(y_test, y_pred)
+        # แบ่งข้อมูลเป็น 3 ส่วน: train, validation, test (60-20-20)
+        X_temp, X_test, y_temp, y_test = train_test_split(
+            X_scaled, y, test_size=0.2, random_state=42, stratify=y
+        )
+        X_train, X_val, y_train, y_val = train_test_split(
+            X_temp, y_temp, test_size=0.25, random_state=42, stratify=y_temp
+        )
         
-        # สร้าง confusion matrix
-        cm = confusion_matrix(y_test, y_pred)
+        # ประเมินด้วย cross-validation
+        st.subheader("ประเมินโมเดลด้วย Cross-Validation")
         
-        # แสดงผลการประเมิน
-        st.write("ผลการประเมินประสิทธิภาพของโมเดลบนชุดข้อมูลทดสอบ (20% ของข้อมูลทั้งหมด)")
+        # สร้างโมเดล
+        model = RandomForestClassifier(
+            n_estimators=100, 
+            max_depth=5,  # จำกัดความลึกเพื่อลด overfitting
+            min_samples_split=5,  # ปรับพารามิเตอร์เพื่อลด overfitting
+            random_state=42
+        )
+        
+        # ทำ cross-validation เพื่อประเมินความแม่นยำ
+        cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+        cv_scores = cross_val_score(model, X_train, y_train, cv=cv, scoring='accuracy')
+        
+        st.write(f"ความแม่นยำเฉลี่ยจาก 5-fold Cross-Validation: {cv_scores.mean():.2f} (±{cv_scores.std():.2f})")
+        
+        # แสดงคะแนนแต่ละ fold
+        fold_scores = pd.DataFrame({
+            'Fold': [f"Fold {i+1}" for i in range(len(cv_scores))],
+            'Accuracy': cv_scores
+        })
+        
+        fig, ax = plt.subplots(figsize=(10, 4))
+        sns.barplot(x='Fold', y='Accuracy', data=fold_scores, ax=ax)
+        ax.set_ylim(0, 1)
+        ax.set_title('ความแม่นยำในแต่ละ Fold')
+        st.pyplot(fig)
+        
+        # เทรนโมเดลกับชุด train และทดสอบกับชุด validation
+        model.fit(X_train, y_train)
+        
+        # ทำนายผลลัพธ์บนชุด validation
+        y_val_pred = model.predict(X_val)
+        
+        # คำนวณค่าเมทริกต่างๆ บนชุด validation
+        val_accuracy = accuracy_score(y_val, y_val_pred)
+        val_precision = precision_score(y_val, y_val_pred)
+        val_recall = recall_score(y_val, y_val_pred)
+        val_f1 = f1_score(y_val, y_val_pred)
+        
+        # แสดงผลการประเมินบนชุด validation
+        st.subheader("ผลการประเมินประสิทธิภาพบนชุดข้อมูล Validation")
         
         metric_col1, metric_col2 = st.columns(2)
         with metric_col1:
-            st.metric("Accuracy", f"{accuracy:.2f}")
-            st.metric("Precision", f"{precision:.2f}")
+            st.metric("Accuracy", f"{val_accuracy:.2f}")
+            st.metric("Precision", f"{val_precision:.2f}")
         with metric_col2:
-            st.metric("Recall", f"{recall:.2f}")
-            st.metric("F1-score", f"{f1:.2f}")
+            st.metric("Recall", f"{val_recall:.2f}")
+            st.metric("F1-score", f"{val_f1:.2f}")
         
-        # แสดง Confusion Matrix
-        st.subheader("Confusion Matrix")
-        cm_df = pd.DataFrame(cm, 
-                         index=['Actual: Not Diabetes', 'Actual: Diabetes'], 
-                         columns=['Predicted: Not Diabetes', 'Predicted: Diabetes'])
+        # แสดง Confusion Matrix สำหรับชุด validation
+        st.subheader("Confusion Matrix (Validation Set)")
+        cm_val = confusion_matrix(y_val, y_val_pred)
+        cm_val_df = pd.DataFrame(cm_val, 
+                             index=['Actual: Not Diabetes', 'Actual: Diabetes'], 
+                             columns=['Predicted: Not Diabetes', 'Predicted: Diabetes'])
         
         fig, ax = plt.subplots(figsize=(8, 6))
-        sns.heatmap(cm_df, annot=True, fmt='d', cmap="Blues", ax=ax)
+        sns.heatmap(cm_val_df, annot=True, fmt='d', cmap="Blues", ax=ax)
         plt.tight_layout()
         st.pyplot(fig)
         
-        # ... (โค้ดส่วนที่เหลือ)
+        # ทำนายผลลัพธ์บนชุด test
+        y_test_pred = model.predict(X_test)
         
-        # อธิบายค่าเมทริก
-        st.markdown("""
-        **ความหมายของค่าเมทริก:**
-        - **Accuracy**: สัดส่วนของการทำนายที่ถูกต้องทั้งหมด (ทั้งผู้ที่เป็นและไม่เป็นเบาหวาน)
-        - **Precision**: ความแม่นยำในการทำนายว่าเป็นเบาหวาน (สัดส่วนของผู้ที่ทำนายว่าเป็นเบาหวานและเป็นจริง)
-        - **Recall**: ความครบถ้วนในการตรวจจับผู้ป่วยเบาหวาน (สัดส่วนของผู้ป่วยเบาหวานจริงที่ทำนายได้ถูกต้อง)
-        - **F1-score**: ค่าเฉลี่ยฮาร์โมนิกของ Precision และ Recall
-        """)
+        # คำนวณค่าเมทริกต่างๆ บนชุด test
+        test_accuracy = accuracy_score(y_test, y_test_pred)
+        test_precision = precision_score(y_test, y_test_pred)
+        test_recall = recall_score(y_test, y_test_pred)
+        test_f1 = f1_score(y_test, y_test_pred)
+        
+        # แสดงผลการประเมินบนชุด test
+        st.subheader("ผลการประเมินประสิทธิภาพบนชุดข้อมูล Test (ข้อมูลที่โมเดลไม่เคยเห็นมาก่อน)")
+        
+        test_col1, test_col2 = st.columns(2)
+        with test_col1:
+            st.metric("Accuracy", f"{test_accuracy:.2f}")
+            st.metric("Precision", f"{test_precision:.2f}")
+        with test_col2:
+            st.metric("Recall", f"{test_recall:.2f}")
+            st.metric("F1-score", f"{test_f1:.2f}")
+        
+        # แสดง Confusion Matrix สำหรับชุด test
+        st.subheader("Confusion Matrix (Test Set)")
+        cm_test = confusion_matrix(y_test, y_test_pred)
+        cm_test_df = pd.DataFrame(cm_test, 
+                             index=['Actual: Not Diabetes', 'Actual: Diabetes'], 
+                             columns=['Predicted: Not Diabetes', 'Predicted: Diabetes'])
+        
+        fig, ax = plt.subplots(figsize=(8, 6))
+        sns.heatmap(cm_test_df, annot=True, fmt='d', cmap="Blues", ax=ax)
+        plt.tight_layout()
+        st.pyplot(fig)
         
         # แสดงความสำคัญของแต่ละปัจจัย
         st.subheader("ความสำคัญของปัจจัยต่างๆ")
@@ -182,9 +256,19 @@ with tab2:
             st.markdown("""
             **ความสำคัญของปัจจัย:** กราฟนี้แสดงว่าแต่ละปัจจัยมีผลต่อการทำนายมากน้อยเพียงใด ปัจจัยที่มีค่าสูงมีอิทธิพลต่อผลการทำนายมากกว่าปัจจัยที่มีค่าต่ำ
             """)
-        except:
-            st.error("ไม่สามารถแสดงความสำคัญของปัจจัยได้")
-    
+        except Exception as e:
+            st.error(f"ไม่สามารถแสดงความสำคัญของปัจจัยได้: {e}")
+        
+        # อธิบายเพิ่มเติมเกี่ยวกับความน่าเชื่อถือของผลลัพธ์
+        st.subheader("หมายเหตุเกี่ยวกับการประเมินประสิทธิภาพ")
+        st.info("""
+        การประเมินประสิทธิภาพของโมเดลอย่างน่าเชื่อถือควรทำโดย:
+        1. **ข้อมูลที่สมดุล**: ควรมีจำนวนตัวอย่างของแต่ละคลาส (เป็นหรือไม่เป็นเบาหวาน) ในสัดส่วนที่เหมาะสม
+        2. **Cross-validation**: ช่วยให้มั่นใจว่าผลการประเมินไม่ได้เกิดจากการสุ่มแบ่งข้อมูลที่เอื้อประโยชน์เป็นพิเศษ
+        3. **การแยกชุดข้อมูล**: การแบ่งข้อมูลเป็น train/validation/test ช่วยให้เราสามารถปรับแต่งโมเดลและประเมินด้วยข้อมูลที่ไม่เคยเห็นมาก่อนจริงๆ
+        4. **การจัดการค่าสูญหาย**: เราได้แทนที่ค่า 0 ที่ไม่สมเหตุสมผลในตัวแปรบางตัว เช่น น้ำตาลในเลือด (Glucose) เพื่อให้โมเดลเรียนรู้ได้ดีขึ้น
+        """)
+
     except Exception as e:
         st.error(f"เกิดข้อผิดพลาดในการประเมินประสิทธิภาพ: {e}")
         st.info("อาจเกิดจากไม่พบไฟล์ข้อมูล หรือโมเดลมีปัญหา")
