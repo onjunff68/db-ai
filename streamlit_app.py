@@ -97,6 +97,8 @@ except Exception as e:
         sample_y = [0, 1]  # ผลลัพธ์ตัวอย่าง
         simple_model.fit(sample_X, sample_y)
         model = simple_model
+
+        
         st.warning("ใช้โมเดลอย่างง่ายแทน เนื่องจากพบปัญหาในการสร้างโมเดลจากข้อมูลจริง")
 
 # สร้างหน้าเว็บ
@@ -136,9 +138,9 @@ with tab1:
             from sklearn.ensemble import RandomForestClassifier
             simple_model = RandomForestClassifier(n_estimators=10)
             # ใช้ข้อมูลตัวอย่างเพื่อสร้างโมเดลอย่างง่าย
-            sample_X = [[6, 148, 72, 35, 0, 33.6, 0.627, 50],  # ตัวอย่างคนที่เป็นเบาหวาน
-                        [1, 85, 66, 29, 0, 26.6, 0.351, 31]]   # ตัวอย่างคนที่ไม่เป็นเบาหวาน
-            sample_y = [1, 0]  # ผลลัพธ์ตัวอย่าง
+            sample_X = [[1, 85, 66, 29, 0, 26.6, 0.351, 31],  # ตัวอย่างคนที่ไม่เป็นเบาหวาน
+                        [6, 148, 72, 35, 0, 33.6, 0.627, 50]]  # ตัวอย่างคนที่เป็นเบาหวาน
+            sample_y = [0, 1]  # ผลลัพธ์ตัวอย่าง (0=ไม่เป็น, 1=เป็น)
             simple_model.fit(sample_X, sample_y)
             st.info("ใช้โมเดลอย่างง่ายแทน เนื่องจากพบปัญหาความเข้ากันของเวอร์ชัน")
             prediction = simple_model.predict(features)[0]
