@@ -146,10 +146,10 @@ with tab1:
             prediction = simple_model.predict(features)[0]
         
         # แสดงผลลัพธ์
-        if prediction == 1:
-            st.error("⚠️ คุณอาจมีความเสี่ยงที่จะเป็น **โรคเบาหวาน**")
-        else:
+        if prediction == 0:
             st.success("✅ คุณไม่มีแนวโน้มที่จะเป็น **โรคเบาหวาน**")
+        else:
+            st.error("⚠️ คุณอาจมีความเสี่ยงที่จะเป็น **โรคเบาหวาน**")
 
 # แท็บประสิทธิภาพของโมเดล
 with tab2:
