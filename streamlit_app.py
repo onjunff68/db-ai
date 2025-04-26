@@ -166,8 +166,8 @@ with tab2:
         st.write("สัดส่วนของคลาส:")
         fig, ax = plt.subplots(figsize=(8, 4))
         sns.countplot(x='Outcome', data=df, ax=ax)
-        ax.set_xlabel('ผลลัพธ์ (0 = ไม่เป็นเบาหวาน, 1 = เป็นเบาหวาน)')
-        ax.set_ylabel('จำนวน')
+        ax.set_xlabel('Result (0 = Not diabetic, 1 = Diabetic)')
+        ax.set_ylabel('Amount')
         st.pyplot(fig)
         
         # แยกตัวแปรต้นและตัวแปรตาม
